@@ -1,0 +1,19 @@
+{
+  "name": "grave-fortunes-proto",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "ts-node src/demo.ts",
+    "simulate": "ts-node src/demo.ts --simulate 100000 1",
+    "build": "tsc -p .",
+  "build:browser": "esbuild src/browser.ts src/app.ts --bundle --outdir=dist --format=iife",
+  "watch:browser": "esbuild src/browser.ts src/app.ts --bundle --outdir=dist --format=iife --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.21.0"
+  }
+}

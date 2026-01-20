@@ -1,0 +1,209 @@
+* { box-sizing: border-box; }
+body { font-family: 'Trebuchet MS', system-ui, sans-serif; margin:0; background:#120d1a; color:#f2f2f2; overflow-x:hidden; }
+body.flash-green { animation: flashGreen 0.5s; }
+body.flash-red { animation: flashRed 0.5s; }
+body.edge-glow:before { content:''; position:fixed; inset:0; pointer-events:none; box-shadow:0 0 40px 10px rgba(0,255,120,0.4) inset; }
+
+.game-root { position:relative; max-width:900px; margin:0 auto; padding:0.5rem 0 3.5rem; display:flex; flex-direction:column; align-items:center; }
+.playfield { position:relative; width:100%; aspect-ratio:16/9; background:linear-gradient(#1d1328,#241a35); border:4px solid #2c213f; border-radius:12px; overflow:hidden; box-shadow:0 0 25px rgba(0,0,0,0.6); }
+
+.text-panel { position:absolute; top:0.5rem; left:50%; transform:translateX(-50%); background:#3a2a50; padding:0.4rem 1rem; border:3px solid #27173a; border-radius:40px; font-weight:bold; letter-spacing:0.5px; text-shadow:2px 2px 0 #000; }
+.text-panel.pulse { animation:pulse 0.8s ease-in-out infinite alternate; }
+.text-panel.critical { background:#2e5f2e; color:#caffc0; }
+
+.grave-container { position:absolute; inset:0; pointer-events:none; }
+.grave { position:absolute; width:60px; height:70px; background:#433553; border:3px solid #2c203d; border-radius:8px; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:28px; color:#b8a5c9; opacity:0.6; transition:opacity 0.3s, filter 0.3s; }
+.grave.highlight { opacity:1; filter:drop-shadow(0 0 6px #a58cff); }
+.grave.glow { opacity:1; border-color:#a58cff; box-shadow:0 0 10px 4px #a58cff, 0 0 28px 12px rgba(165,140,255,0.45); }
+/* Enhanced lit state for grave (distinct from static glow) */
+.grave.lit { opacity:1; border-color:#a58cff; box-shadow:0 0 12px 5px #d5c6ff, 0 0 34px 14px rgba(200,180,255,0.55); animation:graveGlow 1.2s ease-in-out infinite alternate; z-index:5; }
+/* Popup win bubble for each dig reveal */
+.popup-win { position:absolute; left:50%; bottom:100%; transform:translateX(-50%); padding:.15rem .4rem; border-radius:.35rem; background:#1a3; color:#fff; font-weight:700; pointer-events:none; z-index:3; font-size:12px; }
+.popup-win.chase-prize { background:linear-gradient(45deg, #ffd700, #ffaa00); color:#8b4513; font-size:16px; font-weight:900; border:2px solid #ff6600; box-shadow:0 0 20px #ffd700; animation:chaseGlow 1s ease-in-out infinite alternate; }
+.grave.flicker { animation:flicker 0.35s linear 2; }
+.grave .prize { position:absolute; bottom:100%; left:50%; transform:translate(-50%,10px); background:#2c5742; padding:2px 6px; border-radius:6px; font-size:12px; opacity:0; transition:transform 0.4s, opacity 0.4s; border:1px solid #1d3b2d; }
+.grave .prize.show { opacity:1; transform:translate(-50%,-10px); }
+/* Visible static prize label */
+.grave-value { font-size:12px; font-weight:bold; color:#e9ddff; text-shadow:1px 1px 0 #281438; position:absolute; bottom:4px; left:50%; transform:translateX(-50%); }
+
+/* Position graves in ring */
+/* Ring meta flags (position applied via JS using trig) */
+.grave-container .grave { --count:10; animation:none; }
+.grave-container { counter-reset:grave; }
+.grave-container .grave { counter-increment:grave; }
+/* Generate ring positions dynamically via JS (set left/top using trig) */
+
+.zombie-container { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); width:100%; height:100%; pointer-events:none; }
+.zombie-container.recoil { animation:recoil 0.25s; }
+.zombie-container.leap { animation:leapForward 0.9s ease; }
+.zombie-sprite { position:absolute; font-size:52px; filter:drop-shadow(0 3px 4px rgba(0,0,0,0.6)); will-change:transform; }
+/* Position 3 zombies inside the grave ring - triangular formation */
+.zombie-sprite.zombie-1 { left:35%; top:42%; transform:translate(-50%, -50%); }
+.zombie-sprite.zombie-2 { left:50%; top:50%; transform:translate(-50%, -50%); }
+.zombie-sprite.zombie-3 { left:65%; top:42%; transform:translate(-50%, -50%); }
+
+/* Zombie states - NO TRANSITIONS, only animations on active zombie */
+.zombie-sprite.target { z-index:10; }
+.zombie-sprite.aiming { animation:targetAiming 0.5s ease-in-out forwards; transform:translate(-50%, -50%) scale(1.25); filter:drop-shadow(0 0 15px #ff0000); }
+.zombie-sprite.hit { opacity:0.3; filter:drop-shadow(0 3px 4px rgba(0,0,0,0.6)) grayscale(1); }
+.zombie-sprite.dead { animation:zombieDeath 0.8s ease-out forwards; }
+.zombie-sprite.dodge { animation:zombieDodge 0.6s ease-in-out forwards; }
+
+/* Zombie hit/miss feedback text */
+.zombie-hit-text, .zombie-miss-text { position:absolute; font-size:24px; font-weight:bold; pointer-events:none; z-index:20; transform:translate(-50%, -50%); animation:floatUpFade 1s ease-out forwards; text-shadow:2px 2px 4px rgba(0,0,0,0.8); }
+.zombie-hit-text { color:#5ce65c; }
+.zombie-miss-text { color:#ff6b6b; }
+
+/* Grave transformation to zombie */
+.grave.zombie-transform { animation:graveToZombie 0.6s ease-out forwards; }
+.grave.zombie-transform .grave-value { opacity:0; }
+.grave .zombie-emoji { font-size:28px; animation:zombieRise 0.5s ease-out; }
+
+/* Horde mode effects */
+.horde-hit-flash { position:absolute; inset:0; background:radial-gradient(circle, rgba(255,50,50,0.3) 0%, transparent 70%); pointer-events:none; animation:hordeFlash 0.2s ease-out; z-index:15; }
+.zombie-death-effect { position:fixed; font-size:48px; pointer-events:none; z-index:20; animation:zombieDeathSplat 0.8s ease-out forwards; transform:translate(-50%, -50%); }
+
+/* marker class, animation handled via keyframe floatUp */
+
+.hud { position:absolute; bottom:0.5rem; left:0; width:100%; display:flex; justify-content:center; gap:1rem; align-items:flex-end; }
+.stake-label { background:#2d1f3b; padding:0.4rem 0.8rem; border:2px solid #221430; border-radius:6px; font-size:14px; }
+.stake-label input { width:70px; background:#140c1c; color:#fff; border:1px solid #3a294e; border-radius:4px; padding:2px 4px; }
+.shoot-btn { background:linear-gradient(#6c3c8f,#4e2b70); color:#fff; font-weight:bold; font-size:20px; border:3px solid #2b1843; padding:0.7rem 2.2rem; cursor:pointer; border-radius:12px; box-shadow:0 4px 0 #2b1843; transition:transform 0.15s, filter 0.3s; }
+.shoot-btn:hover:not(:disabled) { transform:translateY(-4px); filter:brightness(1.15); }
+.shoot-btn:active:not(:disabled) { transform:translateY(2px); box-shadow:0 2px 0 #2b1843; }
+.shoot-btn:disabled { opacity:0.5; cursor:default; }
+
+/* Debug bonus button */
+.debug-bonus-btn { background:linear-gradient(#8f5c3c,#704e2b); color:#ffd700; font-weight:bold; font-size:14px; border:2px solid #43281b; padding:0.5rem 1rem; cursor:pointer; border-radius:8px; box-shadow:0 3px 0 #43281b; transition:transform 0.15s, filter 0.3s; }
+.debug-bonus-btn:hover { transform:translateY(-2px); filter:brightness(1.15); }
+.debug-bonus-btn:active { transform:translateY(1px); box-shadow:0 1px 0 #43281b; }
+
+
+.win-panel { position:absolute; bottom:4.2rem; left:50%; transform:translateX(-50%) scale(0.8); background:#25452f; border:3px solid #163120; padding:0.5rem 1rem; border-radius:10px; font-weight:bold; opacity:0; transition:opacity 0.4s, transform 0.4s; text-shadow:1px 2px 0 #000; }
+.win-panel.visible { opacity:1; transform:translateX(-50%) scale(1); }
+.win-panel.celebrate { animation:celebrate 0.9s ease; }
+.win-panel.loss { background:#3a1f28; border-color:#2a1118; }
+.stats-panel { margin-top:0.8rem; width:100%; max-width:900px; background:#201830; border:2px solid #34274a; border-radius:10px; padding:0.6rem 0.9rem; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:0.4rem 0.8rem; font-size:12.5px; }
+.stats-row { display:flex; justify-content:space-between; background:#271d3a; padding:0.25rem 0.5rem; border-radius:6px; }
+.stats-row span:first-child { opacity:0.75; }
+.stats-row span:last-child { font-weight:600; }
+.stats-row:nth-child(4) span:last-child { color:#ffd479; }
+.stats-row:nth-child(5) span:last-child { color:#7bdc6a; }
+.reset-stats-btn { grid-column:1/-1; margin-top:0.3rem; background:#44315f; color:#eee; border:2px solid #2c1f40; padding:0.45rem 0.9rem; border-radius:6px; cursor:pointer; font-weight:600; }
+.reset-stats-btn:hover { background:#5a3f80; }
+
+/* Shot info panel (enhanced) */
+.shot-info { position:absolute; bottom:4.2rem; right:0.5rem; background:#2d4a3e; border:2px solid #1d3a2e; padding:0.5rem 0.8rem; border-radius:10px; font-size:13px; font-weight:700; color:#b8ffcc; opacity:0; transition:opacity 0.4s, transform 0.4s; transform:translateY(10px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
+.shot-info.visible { opacity:1; transform:translateY(0); animation:shotInfoPop 0.6s ease-out; }
+
+@keyframes shotInfoPop {
+  0% { transform:translateY(10px) scale(0.8); opacity:0; }
+  50% { transform:translateY(-5px) scale(1.05); opacity:1; }
+  100% { transform:translateY(0) scale(1); opacity:1; }
+}
+
+/* Individual shot result feedback */
+.shot-result { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); padding:0.8rem 1.5rem; border-radius:12px; font-size:24px; font-weight:bold; opacity:0; pointer-events:none; z-index:10; border:3px solid; box-shadow:0 4px 12px rgba(0,0,0,0.5); }
+.shot-result.miss { color:#ff6b6b; border-color:#ff4757; animation:shotResultMiss 1.2s ease-out forwards; }
+.shot-result.hit { color:#5ce65c; border-color:#2ed573; animation:shotResultHit 1.2s ease-out forwards; }
+
+/* Dodge dust effect */
+.dodge-dust { position:absolute; bottom:20%; left:50%; transform:translateX(-50%); font-size:32px; opacity:0; pointer-events:none; z-index:8; animation:dodgeDust 0.8s ease-out forwards; }
+
+@keyframes dodgeDust {
+  0% { opacity:0; transform:translateX(-50%) scale(0.5); }
+  30% { opacity:1; transform:translateX(-50%) scale(1.2); }
+  100% { opacity:0; transform:translateX(-50%) scale(1.8); }
+}
+
+@keyframes chaseGlow {
+  0% { box-shadow:0 0 15px #ffd700; }
+  100% { box-shadow:0 0 30px #ffd700, 0 0 40px #ffaa00; }
+}
+
+/* Debug Panel */
+.debug-panel { position:fixed; top:10px; right:10px; background:rgba(20,20,20,0.95); border:2px solid #ff6600; border-radius:8px; padding:1rem; color:#fff; font-family:monospace; z-index:1000; max-width:200px; }
+.debug-panel h4 { margin:0 0 0.5rem 0; color:#ff6600; font-size:14px; }
+.debug-panel button { background:#ff6600; color:#fff; border:none; padding:0.3rem 0.6rem; margin:0.2rem 0; border-radius:4px; cursor:pointer; font-size:12px; width:100%; }
+.debug-panel button:hover { background:#ff8800; }
+.debug-panel p { margin:0.5rem 0 0 0; font-size:10px; color:#ccc; }
+
+@keyframes shotResultMiss {
+  0% { opacity:0; transform:translateX(-50%) scale(0.5); }
+  20% { opacity:1; transform:translateX(-50%) scale(1.1); }
+  50% { opacity:1; transform:translateX(-50%) scale(1); }
+  100% { opacity:0; transform:translateX(-50%) scale(0.8); }
+}
+
+@keyframes shotResultHit {
+  0% { opacity:0; transform:translateX(-50%) scale(0.5); }
+  20% { opacity:1; transform:translateX(-50%) scale(1.2); }
+  50% { opacity:1; transform:translateX(-50%) scale(1); }
+  100% { opacity:0; transform:translateX(-50%) scale(0.8); }
+}
+
+/* Bullet chamber */
+.bullet-chamber { position:relative; width:120px; height:90px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.chamber-wheel { position:relative; width:100%; height:60px; border:3px solid #2b1843; border-radius:50%; overflow:hidden; display:flex; flex-direction:column; }
+.chamber-wheel .segment { flex:1; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; letter-spacing:0.5px; }
+.chamber-wheel .segment.gold { background:linear-gradient(#c7a347,#8a6b14); color:#2e1d00; }
+.chamber-wheel .segment.silver { background:linear-gradient(#b8c2cc,#7b8287); color:#101517; }
+.chamber-wheel.spinning { animation:spinWheel 0.9s cubic-bezier(.3,.8,.3,1) infinite; }
+.bullet-result { min-height:18px; font-size:12px; font-weight:bold; text-shadow:1px 1px 0 #000; }
+.bullet-result.gold { color:#ffdd72; }
+.bullet-result.silver { color:#d0d7dc; }
+@keyframes spinWheel { 0% { transform:rotate(0deg); } 100% { transform:rotate(720deg); } }
+
+.footer { text-align:center; padding:0.4rem; font-size:11px; color:#8c7ea2; }
+
+/* Animations */
+@keyframes pulse { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.05); } }
+@keyframes flashGreen { 0% { background:#120d1a; } 50% { background:#0d2d18; } 100% { background:#120d1a; } }
+@keyframes flashRed { 0% { background:#120d1a; } 50% { background:#3a0d0d; } 100% { background:#120d1a; } }
+@keyframes recoil { 0% { transform:translate(-50%,-50%) scale(1) } 40% { transform:translate(-50%,-55%) scale(1.05) } 100% { transform:translate(-50%,-50%) scale(1) } }
+@keyframes leapForward { 0% { transform:translate(-50%, -50%) scale(1) } 40% { transform:translate(-50%, -50%) scale(1.15) } 80% { transform:translate(-50%, -45%) scale(1.28) } 100% { transform:translate(-50%, -45%) scale(1.28) } }
+@keyframes targetAiming { 0% { filter:drop-shadow(0 0 5px #ff0000); transform:translate(-50%, -50%) scale(1.15); } 50% { filter:drop-shadow(0 0 20px #ff0000); transform:translate(-50%, -50%) scale(1.3); } 100% { filter:drop-shadow(0 0 5px #ff0000); transform:translate(-50%, -50%) scale(1.25); } }
+@keyframes zombieDeath { 0% { opacity:1; transform:translate(-50%, -50%) scale(1) rotate(0deg); } 50% { opacity:0.5; transform:translate(-50%, -50%) scale(1.2) rotate(10deg); } 100% { opacity:0; transform:translate(-50%, -30%) scale(0.5) rotate(20deg); } }
+@keyframes zombieDodge { 0% { transform:translate(-50%, -50%); } 30% { transform:translate(-70%, -50%) rotate(-15deg); } 70% { transform:translate(-70%, -50%) rotate(-15deg); } 100% { transform:translate(-50%, -50%) rotate(0deg); } }
+@keyframes floatUpFade { 0% { opacity:1; transform:translate(-50%, -50%); } 100% { opacity:0; transform:translate(-50%, -120%); } }
+@keyframes graveToZombie { 0% { transform:translate(-50%,-50%) scale(1); opacity:1; } 30% { transform:translate(-50%,-50%) scale(0.8); opacity:0.5; } 60% { transform:translate(-50%,-50%) scale(1.1); opacity:0.8; } 100% { transform:translate(-50%,-50%) scale(1); opacity:1; background:#2a4a2a; border-color:#1d3b1d; } }
+@keyframes zombieRise { 0% { transform:translateY(10px); opacity:0; } 100% { transform:translateY(0); opacity:1; } }
+@keyframes hordeFlash { 0% { opacity:1; } 100% { opacity:0; } }
+@keyframes zombieDeathSplat { 0% { opacity:1; transform:translate(-50%, -50%) scale(1); } 50% { opacity:1; transform:translate(-50%, -50%) scale(1.5) rotate(180deg); } 100% { opacity:0; transform:translate(-50%, -70%) scale(0.5) rotate(360deg); } }
+@keyframes zombieRespawn { 0% { opacity:0; transform:translate(-50%, -50%) scale(0.5); filter:blur(4px); } 100% { opacity:1; transform:translate(-50%, -50%) scale(1); filter:blur(0); } }
+@keyframes floatUpAndFade { 0% { opacity:1; transform:translate(-50%, -50%) scale(1); } 100% { opacity:0; transform:translate(-50%, -180%) scale(1.3); } }
+
+/* Horde mode kill effects */
+.grave.horde-killed-state { opacity:0.5; filter:grayscale(1) brightness(0.7); }
+
+/* Horde mode win popup */
+.horde-win-popup { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; animation:fadeIn 0.3s; }
+.horde-win-content { background:linear-gradient(135deg, #2a1a3a 0%, #1a2a1a 100%); padding:2rem 3rem; border-radius:20px; border:4px solid #4a3a5a; box-shadow:0 0 40px rgba(165,140,255,0.6); text-align:center; }
+.horde-win-content h2 { margin:0 0 1rem; font-size:2.5rem; color:#caffca; text-shadow:2px 2px 4px rgba(0,0,0,0.8), 0 0 20px rgba(202,255,202,0.6); }
+.horde-tier-info { margin:0.5rem 0; }
+.horde-tier-info .gold-kills { font-size:1.2rem; color:#ffd700; font-weight:bold; margin:0.5rem 0; text-shadow:0 0 10px rgba(255,215,0,0.5); }
+.horde-win-stats { margin-top:1rem; }
+.horde-win-stats .zombies-killed { font-size:1.5rem; margin:0.5rem 0; color:#ffaa88; font-weight:bold; }
+.horde-win-stats .total-win { font-size:3rem; margin:0.5rem 0; color:#ffd700; font-weight:900; text-shadow:2px 2px 4px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.8); }
+.horde-close-btn { margin-top:1.5rem; background:linear-gradient(#6c3c8f,#4e2b70); color:#fff; font-weight:bold; font-size:18px; border:3px solid #2b1843; padding:0.7rem 2rem; cursor:pointer; border-radius:12px; box-shadow:0 4px 0 #2b1843; transition:transform 0.15s, filter 0.3s; }
+.horde-close-btn:hover { transform:translateY(-2px); filter:brightness(1.15); }
+.horde-close-btn:active { transform:translateY(2px); box-shadow:0 2px 0 #2b1843; }
+
+/* Muzzle flash */
+.muzzle-flash { position:absolute; bottom:6%; left:50%; width:160px; height:90px; transform:translateX(-50%); background:radial-gradient(circle at 50% 50%, #ffd57a 0%, #ff9f3c 60%, rgba(0,0,0,0) 70%); opacity:0; pointer-events:none; mix-blend-mode:screen; animation:muzzle 0.18s ease-out forwards; border-radius:50%; filter:blur(2px); }
+@keyframes muzzle { 0% { opacity:0; transform:translateX(-50%) scale(0.4); } 30% { opacity:1; transform:translateX(-50%) scale(1); } 100% { opacity:0; transform:translateX(-50%) scale(1.15); } }
+@keyframes flicker { 0%,100% { filter:none; } 50% { filter:brightness(1.6); } }
+@keyframes floatUp { 0% { opacity:0; transform:translate(-50%,0); } 20% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-80px); } }
+@keyframes celebrate { 0% { transform:translateX(-50%) scale(1); } 30% { transform:translateX(-50%) scale(1.2); } 100% { transform:translateX(-50%) scale(1); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes graveGlow { from { box-shadow:0 0 6px 2px #c4b0ff,0 0 14px 6px rgba(196,176,255,0.35); } to { box-shadow:0 0 16px 6px #e7dbff,0 0 44px 18px rgba(255,240,255,0.55); } }
+
+/* Responsive scaling */
+@media (max-width: 700px) {
+	.shoot-btn { font-size:16px; padding:0.6rem 1.2rem; }
+	.zombie-sprite { font-size:56px; }
+	.grave { width:50px; height:60px; }
+	.win-panel { bottom:4.8rem; }
+}
+
+/* Ring layout via JS into style attribute (see app.ts) */

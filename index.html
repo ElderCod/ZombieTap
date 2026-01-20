@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zombie Shooter - Lucky Tap</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+  <body>
+    <div id="gameRoot" class="game-root">
+      <div id="textPanel" class="text-panel"></div>
+      <div class="playfield">
+        <div id="graveContainer" class="grave-container"></div>
+        <div id="zombieContainer" class="zombie-container">
+          <div id="zombie1" class="zombie-sprite zombie-1">🧟</div>
+          <div id="zombie2" class="zombie-sprite zombie-2">🧟</div>
+          <div id="zombie3" class="zombie-sprite zombie-3">🧟</div>
+        </div>
+      </div>
+      <div class="hud">
+        <label class="stake-label">Stake £<input id="stakeInput" type="number" min="0.1" step="0.1" value="1" /></label>
+        <button id="shootButton" class="shoot-btn">SHOOT</button>
+        <button id="debugBonusBtn" class="debug-bonus-btn" title="Force next shot to be GOLD BULLET">🎯 DEBUG BONUS</button>
+        <div id="bulletChamber" class="bullet-chamber">
+          <div class="chamber-wheel" id="bulletWheel">
+            <div class="segment gold">GOLD</div>
+            <div class="segment silver">SILVER</div>
+          </div>
+          <div id="bulletResult" class="bullet-result"></div>
+        </div>
+    <div id="subtotalPanel" class="subtotal-panel" title="Dig Total">£0.00</div>
+        <div id="winPanel" class="win-panel"></div>
+      </div>
+      <div id="statsPanel" class="stats-panel">
+        <div class="stats-row"><span>Rounds</span><span id="statRounds">0</span></div>
+        <div class="stats-row"><span>Total Stake</span><span id="statStake">£0.00</span></div>
+        <div class="stats-row"><span>Total Win</span><span id="statWin">£0.00</span></div>
+        <div class="stats-row"><span>Net</span><span id="statNet">£0.00</span></div>
+        <div class="stats-row"><span>RTP (Session)</span><span id="statRTP">0.00%</span></div>
+        <div class="stats-row"><span>Theoretical RTP</span><span id="statRTPTheo">0.00%</span></div>
+        <div class="stats-row"><span>Wins</span><span id="statWins">0</span></div>
+        <div class="stats-row"><span>Losses</span><span id="statLosses">0</span></div>
+        <div class="stats-row"><span>Critical Hits</span><span id="statCritical">0</span></div>
+        <div class="stats-row"><span>Fails</span><span id="statFails">0</span></div>
+        <div class="stats-row"><span>Gold Bullets</span><span id="statGoldBullets">0</span></div>
+        <div class="stats-row"><span>Teases (Gold Miss)</span><span id="statTeases">0</span></div>
+        <div class="stats-row"><span>Win Streak</span><span id="statWinStreak">0 (Best: 0)</span></div>
+        <div class="stats-row"><span>Loss Streak</span><span id="statLossStreak">0 (Best: 0)</span></div>
+        <div class="stats-row"><span>Chase Prizes (£50/£100/£250)</span><span id="statChase">0 / 0 / 0</span></div>
+        <button id="resetStatsBtn" class="reset-stats-btn" type="button">Reset Stats</button>
+      </div>
+    </div>
+    <footer class="footer"><small>Prototype – not real money. © 2025</small></footer>
+    <script src="dist/browser.js?v=29"></script>
+    <script src="dist/app.js?v=29"></script>
+  </body>
+</html>
